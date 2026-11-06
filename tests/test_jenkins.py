@@ -28,6 +28,12 @@ def job(defs):
     return {'buildable': True, 'property': [{'parameterDefinitions': defs}]}
 
 
+def git_definition(default='main', choices=('origin/main', 'origin/release')):
+    return {'_class': 'net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition',
+            'name': 'BRANCH', 'defaultParameterValue': {'value': default},
+            'allValueItems': {'values': [{'value': value} for value in choices], 'errors': []}}
+
+
 class MockServer:
     def __init__(self):
         self.requests = []
@@ -122,6 +128,19 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(self.client.trigger(['deploy'], {}), 7)
         self.assertEqual(urlsplit(self.server.requests[0][1]).path, '/jenkins/job/deploy/build')
 
+    def test_git_parameter_uses_exported_choices_and_submits_exact_selected_value(self):
+        branch = 'origin/feature/中文+fix'
+        self.server.routes['/jenkins/job/team%20a/job/deploy/api/json'] = (200, job([git_definition(choices=('origin/main', branch))]), {})
+        self.server.routes['/jenkins/job/team%20a/job/deploy/buildWithParameters'] = (201, {}, {'Location': '/jenkins/queue/item/42/'})
+        definitions = self.client.parameters(['team a', 'deploy'])
+        self.assertEqual(definitions[0]['type'], 'git')
+        query = parse_qs(urlsplit(self.server.requests[0][1]).query)
+        self.assertIn('allValueItems[values[value],errors]', query['tree'][0])
+        self.assertEqual(len(self.server.requests), 1)
+        values = j.freeze_parameters(definitions, {'BRANCH': branch})
+        self.assertEqual(self.client.trigger(['team a', 'deploy'], values), 42)
+        self.assertEqual(parse_qs(self.server.requests[1][3].decode()), {'BRANCH': [branch]})
+
     def test_bad_or_foreign_queue_location_is_unknown_without_followup(self):
         for location in ('/queue/item/42/', '/jenkins/queue/item/nope/', 'http://other.invalid/jenkins/queue/item/42/', '/jenkins/queue/item/42/?q=x'):
             with self.subTest(location=location):
@@ -148,6 +167,55 @@ class ProtocolTests(unittest.TestCase):
 
 
 class ParameterTests(unittest.TestCase):
+    def test_git_defaults_preserve_values_and_resolve_only_unique_remote_prefix(self):
+        for default, choices, expected in (
+            ('origin/main', ['origin/main', 'origin/dev'], 'origin/main'),
+            ('main', ['origin/dev', 'origin/main'], 'origin/main'),
+            ('feature/x', ['origin/feature/x', 'origin/main'], 'origin/feature/x'),
+            ('main', ['origin/main', 'upstream/main'], ''),
+            ('deleted', ['origin/dev', 'origin/main'], ''),
+            (None, ['origin/dev', 'origin/main'], ''),
+            ('v1', ['v1', 'v2', 'v1'], 'v1'),
+        ):
+            with self.subTest(default=default, choices=choices):
+                definitions = j.normalize_parameters(job([git_definition(default, choices)]))
+                self.assertEqual(definitions[0]['default_value'], expected)
+                self.assertEqual(definitions[0]['choices'], list(dict.fromkeys(choices)))
+                if expected:
+                    self.assertEqual(j.freeze_parameters(definitions), {'BRANCH': expected})
+                else:
+                    with self.assertRaises(j.JenkinsError):
+                        j.freeze_parameters(definitions)
+
+    def test_git_errors_missing_or_malformed_choices_never_use_fallback_or_expose_errors(self):
+        for items in (None, {}, [], {'values': [], 'errors': []},
+                      {'values': [{'value': 'main'}], 'errors': ['SECRET_MARKER']},
+                      {'values': [{'value': 'main'}]},
+                      {'values': [{'name': 'main'}], 'errors': []},
+                      {'values': [{'value': 'bad\nbranch'}], 'errors': []},
+                      {'values': [{'value': ''}], 'errors': []},
+                      {'values': [{'value': 42}], 'errors': []}):
+            with self.subTest(items=items):
+                raw = git_definition()
+                raw['allValueItems'] = items
+                with self.assertRaises(j.JenkinsError) as raised:
+                    j.normalize_parameters(job([raw]))
+                self.assertEqual(raised.exception.code, 'git_choices_unavailable')
+                self.assertNotIn('SECRET_MARKER', str(raised.exception))
+
+    def test_git_frozen_selection_survives_order_and_default_changes_but_not_removal(self):
+        old = j.normalize_parameters(job([git_definition()]))
+        values = j.freeze_parameters(old, {'BRANCH': 'origin/release'})
+        current = j.normalize_parameters(job([git_definition('release', ('origin/release', 'origin/main'))]))
+        j.validate_frozen_parameters(old, values, current)
+        self.assertEqual(values, {'BRANCH': 'origin/release'})
+        removed = j.normalize_parameters(job([git_definition(choices=('origin/main',))]))
+        with self.assertRaises(j.JenkinsError):
+            j.validate_frozen_parameters(old, values, removed)
+        for value in ('release', '', False, ['origin/main']):
+            with self.subTest(value=value), self.assertRaises(j.JenkinsError):
+                j.freeze_parameters(old, {'BRANCH': value})
+
     def test_standard_defaults_and_precise_values(self):
         defs = j.normalize_parameters(job([definition('String', 'S'), definition('Text', 'T', 'line\n中文'),
                                           definition('Boolean', 'B', False), definition('Choice', 'C', 'a', ['a', 'b'])]))

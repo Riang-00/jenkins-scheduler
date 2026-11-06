@@ -34,6 +34,7 @@ PARAMETER_TYPES = {
     'hudson.model.TextParameterDefinition': 'text',
     'hudson.model.BooleanParameterDefinition': 'boolean',
     'hudson.model.ChoiceParameterDefinition': 'choice',
+    'net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition': 'git',
 }
 
 
@@ -173,7 +174,8 @@ class Jenkins:
 
     def job(self, segments):
         tree = ('name,buildable,inQueue,lastBuild[number,building,result],'
-                'property[_class,parameterDefinitions[_class,name,description,defaultParameterValue[value],choices]]')
+                'property[_class,parameterDefinitions[_class,name,description,defaultParameterValue[value],choices,'
+                'allValueItems[values[value],errors]]]')
         return self.get(job_path(segments) + '/api/json?tree=' + urllib.parse.quote(tree))
 
     def parameters(self, segments):
@@ -232,8 +234,38 @@ class Jenkins:
         return self.get(job_path(segments) + f'/{_positive_id(number)}/api/json?tree=number,building,result,queueId')
 
 
+def _git_choices(raw, default):
+    """Use the plugin's exported, filtered values; never its error fallback value."""
+    items = raw.get('allValueItems')
+    if (not isinstance(items, dict) or not isinstance(items.get('errors'), list)
+            or items['errors'] or not isinstance(items.get('values'), list)
+            or not 0 < len(items['values']) <= MAX_NODES):
+        raise JenkinsError('git_choices_unavailable',
+                           f'Git 参数“{raw["name"]}”的可选分支或标签读取失败，请在 Jenkins 检查仓库配置、权限和 Git Parameter 插件后重试。')
+    choices = []
+    seen = set()
+    for item in items['values']:
+        value = item.get('value') if isinstance(item, dict) else None
+        if (not isinstance(value, str) or not value.strip() or len(value) > 4096
+                or any(ord(char) < 32 or ord(char) == 127 for char in value)):
+            raise JenkinsError('git_choices_unavailable', 'Git 参数的可选值格式无法识别，请重新读取参数。')
+        if value not in seen:
+            choices.append(value)
+            seen.add(value)
+    if default is not None and not isinstance(default, str):
+        raise JenkinsError('parameter_definition_unreadable', 'Git 参数默认值格式无法识别。')
+    selected = default if default in seen else ''
+    if not selected and default:
+        # Jenkins commonly configures "main" but offers "origin/main". Resolve
+        # only an unambiguous remote prefix; never pick an arbitrary first branch.
+        matches = [value for value in choices if '/' in value and value.split('/', 1)[1] == default]
+        if len(matches) == 1:
+            selected = matches[0]
+    return choices, selected
+
+
 def normalize_parameters(job_json):
-    """Only standard Jenkins definitions are supported; never expose secret defaults."""
+    """Allowlisted standard and Git definitions; never expose secret defaults."""
     if not isinstance(job_json, dict) or not isinstance(job_json.get('property'), list):
         raise JenkinsError('parameter_definition_unreadable', '无法读取完整参数定义，请重新读取项目。')
     raw_definitions = []
@@ -267,7 +299,9 @@ def normalize_parameters(job_json):
         if not isinstance(default, dict):
             raise JenkinsError('parameter_definition_unreadable', '项目参数默认值格式无法识别。')
         value = default.get('value')
-        if kind == 'choice':
+        if kind == 'git':
+            definition['choices'], value = _git_choices(raw, value)
+        elif kind == 'choice':
             choices = raw.get('choices')
             if not isinstance(choices, list) or not choices or any(not isinstance(item, str) for item in choices):
                 raise JenkinsError('parameter_definition_unreadable', '单选参数没有有效选项。')
@@ -301,14 +335,14 @@ def freeze_parameters(definitions, values=None):
         if not name or name in names:
             raise JenkinsError('parameter_definition_unreadable', '参数名称重复或无效。')
         names.add(name)
-        if definition.get('supported') is not True or definition.get('type') not in ('string', 'text', 'boolean', 'choice'):
+        if definition.get('supported') is not True or definition.get('type') not in ('string', 'text', 'boolean', 'choice', 'git'):
             raise JenkinsError('unsupported_parameters', '项目含不支持的参数类型，不能通过本工具预约。')
         value = values[name] if name in values else definition.get('default_value')
         if definition['type'] == 'boolean':
             valid = isinstance(value, bool)
         else:
             valid = isinstance(value, str)
-        if definition['type'] == 'choice':
+        if definition['type'] in ('choice', 'git'):
             valid = valid and isinstance(definition.get('choices'), list) and value in definition['choices']
         if not valid:
             raise JenkinsError('invalid_parameters', '参数值无效，请检查对应项目的参数。')

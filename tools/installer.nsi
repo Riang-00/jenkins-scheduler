@@ -6,10 +6,10 @@ OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\JenkinsScheduler"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
-VIProductVersion "2.1.0.0"
+VIProductVersion "2.1.1.0"
 VIAddVersionKey "ProductName" "Jenkins Scheduler"
 VIAddVersionKey "FileDescription" "Jenkins Scheduler Installer"
-VIAddVersionKey "FileVersion" "2.1.0"
+VIAddVersionKey "FileVersion" "2.1.1"
 VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Riang-00 and contributors"
 !define MUI_ABORTWARNING
 !insertmacro MUI_PAGE_WELCOME
@@ -73,7 +73,7 @@ Section "Install"
     CreateShortcut "$SMPROGRAMS\Jenkins Scheduler\Jenkins Scheduler.lnk" "$INSTDIR\bin\JenkinsScheduler.exe"
     CreateShortcut "$DESKTOP\Jenkins Scheduler.lnk" "$INSTDIR\bin\JenkinsScheduler.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayName" "Jenkins Scheduler"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayVersion" "2.1.0"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayVersion" "2.1.1"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "InstallLocation" "$INSTDIR"
   ${EndIf}

@@ -28,7 +28,7 @@ export type Project = {
 }
 export type Parameter = {
   name: string
-  type: "string" | "text" | "boolean" | "choice" | "unsupported"
+  type: "string" | "text" | "boolean" | "choice" | "git" | "unsupported"
   default_value?: ParameterValue
   choices?: string[]
   supported: boolean
@@ -144,7 +144,7 @@ export async function request<T>(
   action: string,
   data: Record<string, unknown> = {},
 ): Promise<T> {
-  const payload = { ...data, action, protocol: 2, version: "2.1.0" }
+  const payload = { ...data, action, protocol: 2, version: "2.1.1" }
   if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > 65536)
     throw new Error("请求内容超过上限，请分批选择项目或减少本次预约的参数。")
   if (preview) {

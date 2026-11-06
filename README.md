@@ -4,7 +4,7 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 
 ## 下载与安装
 
-从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.1.0-windows-x64-setup.exe`，双击安装，然后打开桌面的 **Jenkins Scheduler**。
+从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.1.1-windows-x64-setup.exe`，双击安装，然后打开桌面的 **Jenkins Scheduler**。
 
 - 支持 Windows 10/11 x64；安装包自带 Python，无需另行安装开发环境。
 - 界面使用 Microsoft Edge WebView2。缺少该组件时，安装器需要联网下载并安装微软官方运行时。
@@ -15,7 +15,7 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 
 本教程按第一次使用的顺序操作。已有 Jenkins 配置时，可以直接从[选择部署项目](#step-4)开始。
 
-> 以下截图使用 v2.1.0 的实际页面组件，在隔离的本机演示环境中截取。地址、账号、项目和预约均为测试数据，不包含真实 Token，也没有触发真实部署。请将图中的 `127.0.0.1` 地址和示例参数替换为自己的配置；点击图片可查看大图。
+> 以下截图使用 v2.1.0 / v2.1.1 的实际页面组件，在隔离的本机演示环境中截取。地址、账号、项目和预约均为测试数据，不包含真实 Token，也没有触发真实部署。请将图中的 `127.0.0.1` 地址和示例参数替换为自己的配置；点击图片可查看大图。
 
 | 步骤 | 操作 |
 | --- | --- |
@@ -97,6 +97,10 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 
 图中的 `REVISION`、`NOTES`、`DRY_RUN`、`ENVIRONMENT` 只是演示项目的参数，实际名称和含义由你的 Jenkins 项目决定；不能仅凭 `DRY_RUN` 这个名称判断项目一定不会部署。普通构建会显示“此项目不需要构建参数”。不支持的参数类型会显示原因，需要移除该项目后再预约。
 
+从 v2.1.1 起支持 **Git Parameter 插件**：例如 `BRANCH` 会显示 Jenkins 返回的分支或标签下拉列表。选择要构建的值；新增分支后点击 **刷新参数**。默认值 `main` 只有在唯一匹配 `origin/main` 这类远程分支时才会自动选中；没有明确默认值时需要手动选择。预约保存完整所选值，执行前会再次核对，分支已删除或列表读取失败时停止执行，不会自动改选其他分支。
+
+![Git 参数分支选择与刷新](docs/screenshots/12-git-parameters.jpg)
+
 一次选择多个项目时，用 **上移／下移** 调整执行顺序。每个项目执行结束后才会继续下一个；任一项目失败或结果未知时，停止后续项目。
 
 ![构建参数：展开项目，填写文本、布尔值与下拉选项](docs/screenshots/06-build-parameters.jpg)
@@ -161,7 +165,8 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 | 找不到 API Token | 查看个人设置的“安全／配置”入口；Jenkins 版本和认证策略可能不同，必要时联系管理员。 |
 | 验证账号失败 | 检查 Jenkins 首页地址、用户名、Token 是否匹配，以及本机网络或 VPN 是否能访问该 Jenkins。 |
 | 找不到项目或分类 | 先选对 Jenkins，切回“全部项目”并清空搜索，再刷新项目和分类；确认当前账号有查看权限。 |
-| 提示“不支持的参数” | 当前版本无法处理该参数类型，不能直接预约该项目；根据提示核对 Jenkins 参数配置。 |
+| 提示“不支持的参数” | Git Parameter 请升级至 v2.1.1 或更新版本；密码、文件上传及其他未适配的插件参数仍不能预约。 |
+| Git 分支或标签列表读取失败 | 在 Jenkins 的“Build with Parameters”页面核对插件、仓库配置和账号权限，再重试读取；工具不会使用插件出错时返回的默认分支替代真实列表。 |
 | Windows 任务注册失败 | 核对 Task Scheduler 服务、当前 Windows 账号权限和管理员授权结果；记录失败时不代表预约已成功。 |
 | 关掉程序后还会执行吗 | 已确认的预约由 Windows 任务计划程序执行，界面可关闭；电脑、网络和登录状态仍须满足上述条件。 |
 | “未配置发布包校验”是什么 | 项目未启用可选的 ZIP/SHA256 校验，可以按 Jenkins 构建流程预约；如业务需要，在“Jenkins 设置 → 部署项目”中配置。 |

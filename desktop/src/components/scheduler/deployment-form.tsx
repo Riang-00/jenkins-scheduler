@@ -170,6 +170,7 @@ export function DeploymentForm({
               <span className="parameter-count">{parameterLoading[project.id] ? "读取中" : parameterErrors[project.id] ? "读取失败" : definition?.supported ? definition.parameters.length + " 个参数" : "无法预约"}</span></summary>
             <div className="parameter-project-body">
               <div className="row-actions reorder-actions">
+                {definition?.parameters.some((parameter) => parameter.type === "git") && <Button variant="outline" size="sm" disabled={busy || !!parameterLoading[project.id]} onClick={() => void loadParameters(project)}><RefreshCw size={13} />刷新参数</Button>}
                 <Button variant="outline" size="sm" disabled={busy || index === 0} onClick={() => move(index, -1)} aria-label={project.label + " 上移"}><ArrowUp size={13} />上移</Button>
                 <Button variant="outline" size="sm" disabled={busy || index === selected.length - 1} onClick={() => move(index, 1)} aria-label={project.label + " 下移"}><ArrowDown size={13} />下移</Button>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(project)}><X size={13} />移除</Button>
@@ -185,9 +186,14 @@ export function DeploymentForm({
                 return <label key={parameter.name} className={"field" + (parameter.type === "boolean" ? " boolean-field" : "")} htmlFor={id}>
                   <span>{parameter.name}</span>
                   {parameter.type === "boolean" ? <span className="boolean-control"><input id={id} type="checkbox" checked={value === true} disabled={busy || !!parameterLoading[project.id]} onChange={(event) => update(event.target.checked)} /><span>{value === true ? "true" : "false"}</span></span>
-                    : parameter.type === "choice" ? <select id={id} className="field-control" value={String(value)} disabled={busy || !!parameterLoading[project.id]} onChange={(event) => update(event.target.value)}>{parameter.choices?.map((choice) => <option key={choice} value={choice}>{choice}</option>)}</select>
+                    : parameter.type === "choice" || parameter.type === "git" ? <select id={id} className="field-control" value={String(value)} disabled={busy || !!parameterLoading[project.id]} onChange={(event) => update(event.target.value)}>
+                      {parameter.type === "git" && <option value="" disabled>请选择 Git 分支或标签</option>}
+                      {parameter.type === "git" && value !== "" && !parameter.choices?.includes(String(value)) && <option value={String(value)} disabled>{String(value)}（已失效，请重新选择）</option>}
+                      {parameter.choices?.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                    </select>
                     : parameter.type === "text" ? <textarea id={id} className="field-control" rows={3} value={String(value)} disabled={busy || !!parameterLoading[project.id]} onChange={(event) => update(event.target.value)} />
                     : <Input id={id} value={String(value)} disabled={busy || !!parameterLoading[project.id]} onChange={(event) => update(event.target.value)} />}
+                  {parameter.type === "git" && <small className="field-hint">选项来自 Jenkins Git Parameter 插件，预约将保存所选值。分支有变更时可点击“刷新参数”。</small>}
                 </label>
               })}
             </div>

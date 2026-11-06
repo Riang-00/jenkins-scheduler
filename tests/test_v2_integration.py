@@ -20,6 +20,7 @@ import engine as e
 import jenkins as j
 import scheduler_v2 as s
 from simulated_jenkins import SimulationSuite, credentials
+from test_jenkins import git_definition
 
 
 @unittest.skipUnless(os.name == 'nt', 'Integration uses current-user Windows DPAPI')
@@ -136,6 +137,45 @@ class V2IntegrationTests(unittest.TestCase):
         log = self.call('link', id=b['id'], project_id=b_result['items'][0]['project_id'], kind='console')['url']
         self.assertTrue(log.startswith(self.suite.b.base_url + '/job/team-a/job/deploy/'))
         self.assert_no_secret_in_public_or_records(a_draft, a, b, history_a, self.call('state'))
+
+    def test_git_branch_is_selected_frozen_and_submitted_through_worker(self):
+        path = ('team-a', 'deploy')
+        self.suite.a.jobs[path]['definitions'] = [git_definition()]
+        projects = self.select('A', path)
+        response = self.call('parameters', instance_id=self.identifiers['A'], project_id=projects[path]['id'])
+        self.assertTrue(response['supported'])
+        self.assertEqual(response['parameters'][0]['choices'], ['origin/main', 'origin/release'])
+        draft = self.prepare('A', [path], {path: {'BRANCH': 'origin/release'}})
+        confirmed = self.call('confirm', id=draft['id'])
+        self.assertEqual(self.suite.a.counts()['build_posts'], 0)
+        self.suite.a.jobs[path]['definitions'] = [git_definition('main', ('origin/release', 'origin/main'))]
+        result = self.run_at_schedule(confirmed)
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(self.suite.a.submissions[0]['endpoint'], 'buildWithParameters')
+        self.assertEqual(self.suite.a.submissions[0]['parameters'], {'BRANCH': ['origin/release']})
+
+    def test_removed_git_branch_stops_worker_and_later_projects_without_submission(self):
+        path = ('team-a', 'deploy')
+        self.suite.a.jobs[path]['definitions'] = [git_definition()]
+        self.select('A', path, ('team-b', 'deploy'))
+        draft = self.prepare('A', [path, ('team-b', 'deploy')], {path: {'BRANCH': 'origin/release'}})
+        confirmed = self.call('confirm', id=draft['id'])
+        self.suite.a.jobs[path]['definitions'] = [git_definition(choices=('origin/main',))]
+        result = self.run_at_schedule(confirmed)
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(self.suite.a.counts()['build_posts'], 0)
+
+    def test_git_list_error_rejects_preparation_without_creating_reservation(self):
+        path = ('team-a', 'deploy')
+        raw = git_definition()
+        raw['allValueItems']['errors'] = ['SECRET_MARKER']
+        self.suite.a.jobs[path]['definitions'] = [raw]
+        self.select('A', path)
+        with self.assertRaises(j.JenkinsError) as raised:
+            self.prepare('A', [path])
+        self.assertEqual(raised.exception.code, 'git_choices_unavailable')
+        self.assertNotIn('SECRET_MARKER', str(raised.exception))
+        self.assertEqual(self.suite.a.counts()['build_posts'], 0)
 
     def test_unknown_submission_never_retries_or_submits_later_projects(self):
         self.select('A', ('plain',), ('team-b', 'deploy'))
