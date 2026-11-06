@@ -47,9 +47,8 @@ Function .onInit
 FunctionEnd
 
 Function ValidateInstallDirectory
-  GetFullPathName $INSTDIR "$INSTDIR"
+  ; Keep NSIS's directory value intact; a fresh target may not exist yet.
   ${If} $ExistingInstall != ""
-    GetFullPathName $ExistingInstall "$ExistingInstall"
     ${If} $INSTDIR != $ExistingInstall
       MessageBox MB_ICONSTOP "已安装到：$ExistingInstall$\r$\n升级请保留原安装目录。若要更换位置，请先卸载旧版，再重新安装；卸载会保留配置和历史数据。" /SD IDOK
       SetErrorLevel 1
