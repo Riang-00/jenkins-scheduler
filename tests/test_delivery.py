@@ -40,7 +40,7 @@ class CandidateTests(unittest.TestCase):
         self.assertFalse((output / 'data').exists())
         self.assertFalse((output / '.git').exists())
         manifest = c.read_json(output / 'release-manifest.json')
-        self.assertEqual((manifest['protocol'], manifest['version']), (2, '2.1.1'))
+        self.assertEqual((manifest['protocol'], manifest['version']), (2, '2.1.2'))
         self.assertTrue(s.REQUIRED_FILES.issubset(manifest['files']))
         self.assertEqual(manifest['source_revision'], 'a' * 40)
         for name, expected in manifest['files'].items():

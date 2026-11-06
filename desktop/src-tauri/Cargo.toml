@@ -1,6 +1,6 @@
 [package]
 name = "tauri-native"
-version = "2.1.1"
+version = "2.1.2"
 description = "Jenkins one-shot deployment scheduler"
 authors = ["Riang-00"]
 edition = "2024"

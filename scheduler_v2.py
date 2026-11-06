@@ -17,7 +17,7 @@ import engine as e
 import jenkins as j
 
 PROTOCOL = 2
-VERSION = '2.1.1'
+VERSION = '2.1.2'
 ACTIVE = {'pending', 'running'}
 REQUIRED_FILES = {'app.py', 'engine.py', 'bridge.py', 'configuration.py', 'jenkins.py',
                   'scheduler_v2.py', 'management.py', 'runtime_layout.py', 'register-elevated.ps1', 'bin/JenkinsScheduler.exe'}

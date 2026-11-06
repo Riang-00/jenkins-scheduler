@@ -4,15 +4,18 @@ Unicode true
 Name "Jenkins Scheduler"
 OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\JenkinsScheduler"
+InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "InstallLocation"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
-VIProductVersion "2.1.1.0"
+VIProductVersion "2.1.2.0"
 VIAddVersionKey "ProductName" "Jenkins Scheduler"
 VIAddVersionKey "FileDescription" "Jenkins Scheduler Installer"
-VIAddVersionKey "FileVersion" "2.1.1"
+VIAddVersionKey "FileVersion" "2.1.2"
 VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Riang-00 and contributors"
 !define MUI_ABORTWARNING
 !insertmacro MUI_PAGE_WELCOME
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE ValidateInstallDirectory
+!insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -21,18 +24,44 @@ VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Riang-00 and contributors"
 Var DataDir
 Var Arguments
 Var Result
+Var ExistingInstall
 
 Function .onInit
   SetShellVarContext current
+  SetRegView 32
+  ReadRegStr $ExistingInstall HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "InstallLocation"
+  ${IfNot} ${FileExists} "$ExistingInstall\release-manifest.json"
+    StrCpy $ExistingInstall ""
+  ${EndIf}
   StrCpy $DataDir "$LOCALAPPDATA\JenkinsScheduler\data"
   ${GetParameters} $Arguments
+  ; Isolated installations do not participate in registered-app upgrade checks.
+  ${GetOptions} $Arguments "/NO_SHORTCUTS" $0
+  ${IfNot} ${Errors}
+    StrCpy $ExistingInstall ""
+  ${EndIf}
   ${GetOptions} $Arguments "/DATA_DIR=" $Result
   ${IfNot} ${Errors}
     StrCpy $DataDir $Result
   ${EndIf}
 FunctionEnd
 
+Function ValidateInstallDirectory
+  GetFullPathName $INSTDIR "$INSTDIR"
+  ${If} $ExistingInstall != ""
+    GetFullPathName $ExistingInstall "$ExistingInstall"
+    ${If} $INSTDIR != $ExistingInstall
+      MessageBox MB_ICONSTOP "已安装到：$ExistingInstall$\r$\n升级请保留原安装目录。若要更换位置，请先卸载旧版，再重新安装；卸载会保留配置和历史数据。" /SD IDOK
+      SetErrorLevel 1
+      Abort
+    ${EndIf}
+  ${EndIf}
+  SetErrorLevel 0
+FunctionEnd
+
 Section "Install"
+  ; Silent installs must apply the same upgrade rule as the directory page.
+  Call ValidateInstallDirectory
   InitPluginsDir
   SetOutPath "$PLUGINSDIR\payload"
   File /r "${PAYLOAD}\*"
@@ -73,7 +102,7 @@ Section "Install"
     CreateShortcut "$SMPROGRAMS\Jenkins Scheduler\Jenkins Scheduler.lnk" "$INSTDIR\bin\JenkinsScheduler.exe"
     CreateShortcut "$DESKTOP\Jenkins Scheduler.lnk" "$INSTDIR\bin\JenkinsScheduler.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayName" "Jenkins Scheduler"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayVersion" "2.1.1"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "DisplayVersion" "2.1.2"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\JenkinsScheduler" "InstallLocation" "$INSTDIR"
   ${EndIf}
