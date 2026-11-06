@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)][string]$CandidateRoot,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{32}$')][string]$ReservationId,
     [string]$PythonExe = '',
