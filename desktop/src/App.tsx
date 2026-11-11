@@ -294,7 +294,7 @@ export default function App() {
             <section className="panel guide-panel"><h2>执行与维护</h2><ul><li>支持 String、Text、Boolean 和 Choice 参数；其他类型会阻止预约。</li><li>预约保存当次目标与参数，不会在执行时自动套用新默认值。</li><li>使用 ZIP / SHA256 校验的项目在确认前及执行前检查发布包。</li><li>所有预约在本机串行执行。失败或结果未知时，请先核对部署记录和 Jenkins 日志。</li><li>存在活动预约时，影响目标的删除和更换会被阻止。更新账号后，尚未执行的预约使用新账号。</li><li>本机状态每 5 秒刷新，当前 Jenkins 连接每 60 秒检测；当前账号首次使用时自动读取项目，之后可按需刷新。</li></ul></section>
           </div>}
         </>}
-        <footer className="app-footer">Jenkins 部署工作台 <span>v2.2.1 · 本机预约 · 北京时间 UTC+8</span></footer>
+        <footer className="app-footer">Jenkins 部署工作台 <span>v2.2.2 · 本机预约 · 北京时间 UTC+8</span></footer>
       </main>
     </div>
     <ReservationDialog record={draft} mode="confirm" busy={isBusy} error={notice?.error ? notice.text : ""} onClose={() => { setDraft(null); setNotice(null) }} onConfirm={() => void confirmDraft()} onLink={(kind, args) => void link(kind, args)} />

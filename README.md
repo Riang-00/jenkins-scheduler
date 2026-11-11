@@ -4,7 +4,7 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 
 ## 下载与安装
 
-从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.2.1-windows-x64-setup.exe`，双击安装，在“选择安装位置”页面点击“浏览”选择目录，例如 `D:\DevelopApp\JenkinsScheduler`，完成后打开桌面的 **Jenkins Scheduler**。升级时自动带入原安装目录；如需更换位置，请先卸载旧版后再安装。账号和预约数据默认独立保存在 `%LOCALAPPDATA%\JenkinsScheduler\data`，卸载会保留这些数据。
+从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.2.2-windows-x64-setup.exe`，双击安装，在“选择安装位置”页面点击“浏览”选择目录，例如 `D:\DevelopApp\JenkinsScheduler`，完成后打开桌面的 **Jenkins Scheduler**。升级时自动带入原安装目录；如需更换位置，请先卸载旧版后再安装。账号和预约数据默认独立保存在 `%LOCALAPPDATA%\JenkinsScheduler\data`，卸载会保留这些数据。
 
 - 支持 Windows 10/11 x64；安装包自带 Python，无需另行安装开发环境。
 - 界面使用 Microsoft Edge WebView2。缺少该组件时，安装器需要联网下载并安装微软官方运行时。
@@ -179,8 +179,8 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 每位使用者在自己的 Windows 用户下配置一套通知设置，适用于本机全部 Jenkins。默认关闭；开启后必须填写**一个中国大陆11位手机号**，不支持多个号码。该手机号应对应机器人所在群的成员，才能收到 `@` 提醒。
 
 1. 在钉钉群设置中添加“自定义机器人”，在安全设置中选择**加签**，复制 Webhook 和 `SEC` 开头的加签密钥。如果群中没有添加入口，请让群主或管理员检查群的机器人权限。
-2. 打开软件左侧的**通知设置**，开启钉钉通知，填写自己的手机号、Webhook 和加签密钥，点击**保存设置**。凭据使用当前 Windows 用户的 DPAPI 加密保存，不会显示在预约详情中。
-3. 点击**发送测试通知**，到群里确认收到消息并被正确 `@`。测试会真实发送到所配置的群；手机号必须与群成员的钉钉手机号对应。
+2. 打开软件左侧的**通知设置**，开启钉钉通知，填写自己的手机号、Webhook 和加签密钥，点击**保存设置**。成功后页面持续显示“当前通知：已开启”“设置已保存”和“机器人配置已保存”。凭据使用当前 Windows 用户的 DPAPI 加密保存，原文不回显；需要修改时点击**更换机器人**。尚未保存的修改会有提示，保存失败会保留填写内容。
+3. 点击**发送测试通知**，按钮下方会显示测试成功或失败；到群里确认收到消息并被正确 `@`。保存设置只代表本机配置已保存，发送是否成功仍需测试确认。测试会真实发送到所配置的群；手机号必须与群成员的钉钉手机号对应。
 4. 新建预约，在确认窗口核对“钉钉通知 · @手机号”。一次预约结束后发送一条汇总，包含每个项目的构建结果、构建编号和日志链接。通知不会发送构建参数、账号或完整日志。
 
 ![通知设置：开启后填写一个手机号，并配置加签机器人](docs/screenshots/12-dingtalk-notifications.jpg)

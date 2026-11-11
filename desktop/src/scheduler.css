@@ -5,6 +5,7 @@
   --line: #e8eaee;
   --ink: #20232b;
   --blue: #4763d7;
+  --positive: #177451;
   display: flex;
   height: 100dvh;
   color: var(--ink);
@@ -20,6 +21,7 @@
   --line: #30343e;
   --ink: #eceef3;
   --blue: #99acff;
+  --positive: #76d3ad;
 }
 .jenkins-app button {
   cursor: pointer;
@@ -1597,10 +1599,16 @@ textarea.field-control { resize: vertical; min-height: 90px; }
 .notification-panel, .notification-help { padding: 24px; }
 .notification-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
 .notification-heading h2, .notification-help h2 { font-size: 15px; font-weight: 600; }
-.notification-heading p, .notification-toggle span, .notification-off-note, .notification-help li { font-size: 12px; line-height: 1.8; color: var(--muted-ink); }
+.notification-heading p, .notification-off-note, .notification-help li { font-size: 12px; line-height: 1.8; color: var(--muted-ink); }
+.notification-saved-status { padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); margin-bottom: 18px; }
+.notification-saved-status.enabled { border-color: color-mix(in srgb, var(--positive) 25%, var(--line)); background: color-mix(in srgb, var(--positive) 6%, var(--card)); }
+.notification-saved-status > div { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.notification-saved-status strong { font-size: 13px; }
+.notification-saved-status.enabled strong { color: var(--positive); }
+.notification-saved-status span { font-size: 12px; }
+.notification-saved-status p { font-size: 12px; line-height: 1.8; margin-top: 5px; overflow-wrap: anywhere; }
 .notification-toggle { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px; background: var(--canvas); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .notification-toggle strong { display: block; font-size: 13px; }
-.notification-toggle span { display: block; margin-top: 4px; }
 .notification-toggle input { width: 22px; height: 22px; accent-color: var(--blue); cursor: pointer; flex: none; }
 .notification-toggle input:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
 .notification-panel .field { margin-top: 20px; }
@@ -1608,6 +1616,14 @@ textarea.field-control { resize: vertical; min-height: 90px; }
 .required-mark { font-size: 11px; color: var(--muted-ink); margin-left: 6px; }
 .notification-robot-state { display: flex; align-items: flex-start; gap: 8px; margin-top: 22px; font-size: 12px; line-height: 1.7; color: var(--muted-ink); }
 .notification-robot-state svg { flex: none; margin-top: 2px; }
+.notification-robot-saved { display: flex; align-items: flex-start; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); margin-top: 12px; }
+.notification-robot-saved > svg { color: var(--positive); flex: none; margin-top: 2px; }
+.notification-robot-saved > div { flex: 1; min-width: 0; }
+.notification-robot-saved strong { font-size: 13px; font-weight: 500; }
+.notification-robot-saved p, .notification-test-hint { font-size: 12px; color: var(--muted-ink); line-height: 1.8; margin-top: 5px; }
+.notification-cancel-robot { margin-top: 16px; }
+.notification-test-result, .notification-test-hint { margin-top: 16px; }
+.notification-test-result .feedback:not(.error) { border-color: color-mix(in srgb, var(--positive) 25%, var(--line)); background: color-mix(in srgb, var(--positive) 6%, var(--card)); color: var(--positive); }
 .notification-off-note { margin-top: 20px; }
 .notification-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
 .notification-help ul { padding-left: 18px; list-style: disc; margin-top: 16px; }
@@ -1617,6 +1633,7 @@ textarea.field-control { resize: vertical; min-height: 90px; }
 .reservation-notification strong { font-size: 12px; font-weight: 500; }
 .reservation-notification p, .reservation-notification small { font-size: 11px; color: var(--muted-ink); margin-top: 5px; line-height: 1.7; }
 @media (max-width: 1100px) { .notification-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .notification-robot-saved { flex-wrap: wrap; } }
 @media (max-width: 1100px) {
   .settings-layout { grid-template-columns: 185px minmax(0, 1fr); gap: 16px; }
   .settings-tab-content { padding: 18px; }
