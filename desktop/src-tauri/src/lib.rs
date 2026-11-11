@@ -83,8 +83,8 @@ async fn scheduler(request: Value, state: tauri::State<'_, OperationState>) -> R
     let action = request["action"].as_str().ok_or("请求格式无效。")?;
     let mutating = matches!(action, "initialize" | "prepare" | "confirm" | "cancel" | "save_account" |
         "clear_account" | "save_instance" | "delete_instance" | "replace_instance_target" |
-        "save_managed_projects" | "update_project");
-    if !mutating && !matches!(action, "state" | "history" | "projects" | "parameters" | "connection" | "sync_projects" | "sync_views") {
+        "save_managed_projects" | "update_project" | "save_notification_settings" | "test_notification");
+    if !mutating && !matches!(action, "state" | "history" | "projects" | "parameters" | "connection" | "sync_projects" | "sync_views" | "notification_settings") {
         return Err("不支持的操作。".into());
     }
     let guard = if mutating {

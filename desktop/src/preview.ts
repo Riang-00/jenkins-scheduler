@@ -97,6 +97,7 @@ const snapshot: Snapshot = {
 }
 export function previewRequest(action: string, data: Record<string, unknown> = {}) {
   if (action === "state") return structuredClone(snapshot)
+  if (action === "notification_settings") return { revision: 0, enabled: false, phone: "", robot_configured: false }
   const instance = instances.find((item) => item.id === data.instance_id)
   if (action === "history") {
     const query = String(data.query || "").toLocaleLowerCase()

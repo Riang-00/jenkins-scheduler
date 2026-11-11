@@ -15,12 +15,13 @@ import uuid
 import configuration as c
 import engine as e
 import jenkins as j
+import notifications as n
 
 PROTOCOL = 2
-VERSION = '2.1.2'
+VERSION = '2.2.0'
 ACTIVE = {'pending', 'running'}
 REQUIRED_FILES = {'app.py', 'engine.py', 'bridge.py', 'configuration.py', 'jenkins.py',
-                  'scheduler_v2.py', 'management.py', 'runtime_layout.py', 'register-elevated.ps1', 'bin/JenkinsScheduler.exe'}
+                  'scheduler_v2.py', 'management.py', 'notifications.py', 'runtime_layout.py', 'register-elevated.ps1', 'bin/JenkinsScheduler.exe'}
 
 
 @contextlib.contextmanager
@@ -283,6 +284,7 @@ def prepare(data, instance_id, expected_revision, requested_items, when, client_
         c.mutate_settings(data, expected_revision, remember_projects)
     with c.planning_lock(data):
         check_snapshot(record, c.load_settings(data), instance['account_revision'])
+        record['notification'] = n.reservation_snapshot(data)
         c.atomic_json(Path(data) / 'drafts' / (record['id'] + '.json'), record)
     return record
 
@@ -302,6 +304,7 @@ def confirm(data, identifier, registrar=None):
             if e.now() > datetime.fromisoformat(record['created_at']) + timedelta(minutes=15):
                 fail('expired_draft', '预约校验已超过15分钟，请重新准备。')
             check_snapshot(record, c.load_settings(data), record['account_revision'])
+            n.check_snapshot(data, record)
             when = datetime.fromisoformat(record['scheduled_at'])
             if when < e.now() + timedelta(seconds=30):
                 fail('invalid_time', '预约时间已太近，请重新选择时间。')
@@ -329,7 +332,10 @@ def confirm(data, identifier, registrar=None):
                     latest['status'] = 'failed'
                     latest['registration_error'] = {'code': error.code, 'result_code': error.result_code}
                 c.atomic_json(path, latest)
-            return latest
+    if error:
+        n.notify_completion(data, identifier)
+        return adapt_record(c.read_json(path))
+    return latest
 
 
 def cancel(data, identifier, remover=None):
@@ -510,3 +516,6 @@ def run(identifier, data=None, client_factory=j.Jenkins):
                     record = adapt_record(raw)
                     record.update(status='attention', message=str(exc) if isinstance(exc, (c.ConfigError, j.JenkinsError)) else '运行失败，请核对Jenkins；不会自动重试。')
                     c.atomic_json(path, record)
+    finally:
+        # Deployment locks are released first; notifications have independent state.
+        n.notify_completion(data, identifier)

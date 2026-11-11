@@ -72,6 +72,20 @@ export type Reservation = {
   message: string
   results: Record<string, { number?: number; status?: string; result?: string }>
   events: { at: string; message: string }[]
+  notification?: {
+    enabled: boolean
+    phone: string
+    status: "pending" | "disabled" | "sending" | "sent" | "failed" | "unknown"
+    message: string
+    attempted_at?: string
+    sent_at?: string
+  } | null
+}
+export type NotificationSettings = {
+  revision: number
+  enabled: boolean
+  phone: string
+  robot_configured: boolean
 }
 export type Snapshot = {
   initialized: boolean
@@ -144,7 +158,7 @@ export async function request<T>(
   action: string,
   data: Record<string, unknown> = {},
 ): Promise<T> {
-  const payload = { ...data, action, protocol: 2, version: "2.1.2" }
+  const payload = { ...data, action, protocol: 2, version: "2.2.0" }
   if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > 65536)
     throw new Error("请求内容超过上限，请分批选择项目或减少本次预约的参数。")
   if (preview) {

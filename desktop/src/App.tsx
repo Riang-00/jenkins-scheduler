@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { listen } from "@tauri-apps/api/event"
 import {
-  ArrowUpRight, CalendarClock, ChevronRight, CircleHelp, Clock3,
+  ArrowUpRight, BellRing, CalendarClock, ChevronRight, CircleHelp, Clock3,
   History, Layers3, LoaderCircle, Monitor, Moon, RefreshCw, Server,
   Settings2, ShieldCheck, Sun,
 } from "lucide-react"
@@ -10,17 +10,19 @@ import { useTheme } from "@/components/theme-provider"
 import { DeploymentForm } from "@/components/scheduler/deployment-form"
 import { DeploymentHistory } from "@/components/scheduler/deployment-history"
 import { JenkinsSettings } from "@/components/scheduler/jenkins-settings"
+import { NotificationSettings } from "@/components/scheduler/notification-settings"
 import { ReservationDialog } from "@/components/scheduler/reservation-dialog"
 import { Empty, Feedback, InstancePicker, Loading, Modal, Status } from "@/components/scheduler/common"
 import { formatDate, message, openLink, preview, recordLabel, request } from "@/lib/scheduler"
 import type { Connection, Operation, PageResult, ParameterValues, Reservation, Snapshot } from "@/lib/scheduler"
 import "./scheduler.css"
 
-type Page = "schedule" | "history" | "settings" | "guide"
+type Page = "schedule" | "history" | "settings" | "notifications" | "guide"
 const pages: Record<Page, { title: string; description: string }> = {
   schedule: { title: "预约部署", description: "选择 Jenkins 和部署项目，按计划依次发布。" },
   history: { title: "部署记录", description: "查看每次预约的目标、参数与执行结果。" },
   settings: { title: "Jenkins 设置", description: "分别管理每个 Jenkins 的地址、账号和部署项目。" },
+  notifications: { title: "通知设置", description: "配置个人钉钉群通知，以及预约结束时要 @的手机号。" },
   guide: { title: "使用说明", description: "从连接 Jenkins 到完成部署。" },
 }
 function scopeOf(data: Snapshot | null, id: string) {
@@ -245,6 +247,7 @@ export default function App() {
         <button className={"nav-item" + (page === "schedule" ? " current" : "")} disabled={isBusy} onClick={() => navigate("schedule")}><CalendarClock size={18} />预约部署</button>
         <button className={"nav-item" + (page === "history" ? " current" : "")} disabled={isBusy} onClick={() => navigate("history")}><History size={18} />部署记录</button>
         <button className={"nav-item" + (page === "settings" ? " current" : "")} disabled={isBusy} onClick={() => navigate("settings")}><Settings2 size={18} />Jenkins 设置</button>
+        <button className={"nav-item" + (page === "notifications" ? " current" : "")} disabled={isBusy} onClick={() => navigate("notifications")}><BellRing size={18} />通知设置</button>
       </nav>
       <div className="nav-caption">当前 Jenkins</div>
       <div className="sidebar-instance">{instance?.name || "尚未配置"}</div>
@@ -285,12 +288,13 @@ export default function App() {
           </>}
           {page === "settings" && <JenkinsSettings key={currentScope || "empty"} instances={data.instances} instance={instance} revision={data.config_revision} busy={isBusy} operate={operate} onSelect={selectInstance} onRefresh={reload} onLink={(kind, args) => void link(kind, args)} />}
           {page === "history" && <DeploymentHistory instances={data.instances} busy={isBusy} refreshKey={pollTick} onOpen={showDetail} />}
+          {page === "notifications" && <NotificationSettings busy={isBusy} operate={operate} refreshKey={manualRefresh} />}
           {page === "guide" && <div className="guide-grid">
             <section className="panel guide-panel"><h2>开始使用</h2><ol><li><strong>添加 Jenkins</strong><p>在 Jenkins 设置中填写名称和完整访问地址，支持带路径的地址。</p></li><li><strong>单独配置账号</strong><p>每个 Jenkins 使用各自的用户名和 API Token。凭据由当前 Windows 用户加密保存。</p></li><li><strong>选择部署项目</strong><p>在预约页按分类和关键词查找项目，直接勾选。首次进入会读取项目，也可以手动刷新；无需另行保存项目清单。</p></li><li><strong>检查并预约</strong><p>切换到目标 Jenkins，选择项目、调整执行顺序、填写参数和时间，核对后确认预约。</p></li></ol></section>
             <section className="panel guide-panel"><h2>执行与维护</h2><ul><li>支持 String、Text、Boolean 和 Choice 参数；其他类型会阻止预约。</li><li>预约保存当次目标与参数，不会在执行时自动套用新默认值。</li><li>使用 ZIP / SHA256 校验的项目在确认前及执行前检查发布包。</li><li>所有预约在本机串行执行。失败或结果未知时，请先核对部署记录和 Jenkins 日志。</li><li>存在活动预约时，影响目标的删除和更换会被阻止。更新账号后，尚未执行的预约使用新账号。</li><li>本机状态每 5 秒刷新，当前 Jenkins 连接每 60 秒检测；当前账号首次使用时自动读取项目，之后可按需刷新。</li></ul></section>
           </div>}
         </>}
-        <footer className="app-footer">Jenkins 部署工作台 <span>v2.1 · 本机预约 · 北京时间 UTC+8</span></footer>
+        <footer className="app-footer">Jenkins 部署工作台 <span>v2.2.0 · 本机预约 · 北京时间 UTC+8</span></footer>
       </main>
     </div>
     <ReservationDialog record={draft} mode="confirm" busy={isBusy} error={notice?.error ? notice.text : ""} onClose={() => { setDraft(null); setNotice(null) }} onConfirm={() => void confirmDraft()} onLink={(kind, args) => void link(kind, args)} />

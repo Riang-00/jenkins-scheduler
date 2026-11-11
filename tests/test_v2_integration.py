@@ -18,6 +18,7 @@ import bridge
 import configuration as c
 import engine as e
 import jenkins as j
+import notifications as n
 import scheduler_v2 as s
 from simulated_jenkins import SimulationSuite, credentials
 from test_jenkins import git_definition
@@ -102,6 +103,60 @@ class V2IntegrationTests(unittest.TestCase):
                 self.assertNotIn(username, records)
         self.assertNotIn('Authorization', public + records)
         self.assertNotIn('protected', public + records)
+
+    def test_notification_snapshot_runs_for_each_jenkins_and_is_never_repeated(self):
+        phone, token, secret = '13800000000', 'a' * 64, 'SEC' + 'b' * 64
+        self.call('save_notification_settings', expected_revision=0, enabled=True, phone=phone,
+                  webhook=n.WEBHOOK + '?access_token=' + token, secret=secret)
+        confirmed = []
+        for minutes, alias in ((3, 'A'), (5, 'B')):
+            self.select(alias, ('plain',))
+            draft = self.prepare(alias, [('plain',)], minutes=minutes)
+            self.assertEqual(draft['notification']['phone'], phone)
+            self.assertNotIn('protected', json.dumps(draft))
+            confirmed.append(self.call('confirm', id=draft['id']))
+        # Later edits must not redirect the owner of already confirmed plans.
+        self.call('save_notification_settings', expected_revision=1, enabled=True, phone='13900000000')
+        with patch.object(n, 'send', return_value={'status': 'sent', 'message': 'synthetic acknowledgement'}) as sender:
+            for record in confirmed:
+                result = self.run_at_schedule(record)
+                self.assertEqual((result['status'], result['notification']['status']), ('success', 'sent'))
+                s.run(record['id'], data=self.data)
+            self.assertEqual(sender.call_count, 2)
+            for call in sender.call_args_list:
+                self.assertEqual(call.args[0], {'token': token, 'secret': secret})
+                self.assertEqual(call.args[1], phone)
+                self.assertIn('SUCCESS', call.args[2])
+        self.assertEqual((self.suite.a.counts()['build_posts'], self.suite.b.counts()['build_posts']), (1, 1))
+        public = json.dumps(self.call('history'))
+        stored = ''.join(path.read_text(encoding='utf-8') for path in (self.data / 'reservations').glob('*.json'))
+        for value in (token, secret):
+            self.assertNotIn(value, public + stored)
+        self.assertNotIn('protected', public)
+
+    def test_notification_change_rejects_confirm_before_task_registration(self):
+        self.select('A', ('plain',))
+        draft = self.prepare('A', [('plain',)])
+        self.call('save_notification_settings', expected_revision=0, enabled=True, phone='13800000000',
+                  webhook=n.WEBHOOK + '?access_token=' + 'a' * 64, secret='SEC' + 'b' * 64)
+        with self.assertRaises(c.ConfigError) as raised:
+            self.call('confirm', id=draft['id'])
+        self.assertEqual(raised.exception.code, 'NOTIFICATION_CHANGED')
+        self.assertEqual(self.registrations, [])
+        self.assertEqual(self.suite.a.counts()['build_posts'], 0)
+
+    def test_failed_task_registration_notifies_without_submitting_a_build(self):
+        self.select('A', ('plain',))
+        self.call('save_notification_settings', expected_revision=0, enabled=True, phone='13800000000',
+                  webhook=n.WEBHOOK + '?access_token=' + 'a' * 64, secret='SEC' + 'b' * 64)
+        draft = self.prepare('A', [('plain',)])
+        with (patch.object(e, 'register_task', side_effect=e.TaskRegistrationError()),
+              patch.object(n, 'send', return_value={'status': 'sent', 'message': 'synthetic acknowledgement'}) as sender):
+            record = self.call('confirm', id=draft['id'])
+            self.assertEqual((record['status'], record['notification']['status']), ('failed', 'sent'))
+            self.call('confirm', id=draft['id'])
+            sender.assert_called_once()
+        self.assertEqual(self.suite.a.counts()['build_posts'], 0)
 
     def test_two_instances_accounts_paths_parameters_and_worker_targets(self):
         a_projects = self.select('A', ('team-a', 'deploy'), ('team-b', 'deploy'))

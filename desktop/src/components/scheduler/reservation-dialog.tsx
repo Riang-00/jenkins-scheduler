@@ -1,4 +1,4 @@
-import { CalendarClock, ExternalLink, LoaderCircle, ShieldCheck } from "lucide-react"
+import { BellRing, CalendarClock, ExternalLink, LoaderCircle, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatDate, packageLabel, valueLabel } from "@/lib/scheduler"
 import type { Reservation } from "@/lib/scheduler"
@@ -38,6 +38,9 @@ export function ReservationDialog({
         {!confirming && <Status status={record.status} label={record.status_label} />}
       </div>
       {!confirming && <div className="detail-message">{record.message || "暂无执行说明"}</div>}
+      <div className="reservation-notification"><BellRing size={16} /><div><strong>{record.notification?.enabled ? "钉钉通知 · @" + record.notification.phone : "未开启钉钉通知"}</strong><p>{record.notification?.enabled
+        ? confirming ? "执行结束后发送结果汇总；关闭通知设置可停止尚未发送的通知。" : record.notification.message
+        : "本次预约不发送钉钉通知。"}</p>{!confirming && record.notification?.sent_at && <small>发送于 {formatDate(record.notification.sent_at)}</small>}</div></div>
       <div className="reservation-items">
         {record.items.map((item, index) => {
           const result = record.results?.[item.project_id]

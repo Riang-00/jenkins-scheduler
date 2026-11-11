@@ -9,6 +9,7 @@ import configuration as c
 import engine as e
 import jenkins as j
 import scheduler_v2 as s
+import notifications as n
 
 WRITES = {'initialize', 'save_instance', 'delete_instance', 'replace_instance_target', 'save_account',
           'clear_account', 'save_managed_projects', 'update_project', 'prepare', 'confirm', 'cancel'}
@@ -25,6 +26,7 @@ def public_record(record):
     if isinstance(result.get('items'), list):
         for item in result['items']:
             item.pop('parameter_definitions', None)
+    result['notification'] = n.public_notification(record.get('notification'))
     return result
 
 
@@ -118,6 +120,12 @@ def handle(request):
     action = request['action']
     if action == 'state':
         return snapshot()
+    if action == 'notification_settings':
+        return n.public_settings(n.load(e.DATA))
+    if action == 'save_notification_settings':
+        return n.save(e.DATA, request)
+    if action == 'test_notification':
+        return n.test(e.DATA, request)
     if action == 'history':
         rows = [public_record(r) for r in s.records(e.DATA)]
         query = request.get('query', '')
