@@ -4,7 +4,7 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 
 ## 下载与安装
 
-从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.2.0-windows-x64-setup.exe`，双击安装，在“选择安装位置”页面点击“浏览”选择目录，例如 `D:\DevelopApp\JenkinsScheduler`，完成后打开桌面的 **Jenkins Scheduler**。升级时自动带入原安装目录；如需更换位置，请先卸载旧版后再安装。账号和预约数据默认独立保存在 `%LOCALAPPDATA%\JenkinsScheduler\data`，卸载会保留这些数据。
+从 [Releases](https://github.com/Riang-00/jenkins-scheduler/releases/latest) 下载 `JenkinsScheduler-2.2.1-windows-x64-setup.exe`，双击安装，在“选择安装位置”页面点击“浏览”选择目录，例如 `D:\DevelopApp\JenkinsScheduler`，完成后打开桌面的 **Jenkins Scheduler**。升级时自动带入原安装目录；如需更换位置，请先卸载旧版后再安装。账号和预约数据默认独立保存在 `%LOCALAPPDATA%\JenkinsScheduler\data`，卸载会保留这些数据。
 
 - 支持 Windows 10/11 x64；安装包自带 Python，无需另行安装开发环境。
 - 界面使用 Microsoft Edge WebView2。缺少该组件时，安装器需要联网下载并安装微软官方运行时。
@@ -186,6 +186,23 @@ Windows 上的 Jenkins 预约部署工具。每个人独立安装，在自己的
 ![通知设置：开启后填写一个手机号，并配置加签机器人](docs/screenshots/12-dingtalk-notifications.jpg)
 
 > 本图使用隔离环境、合成手机号和机器人凭据生成；测试按钮连接模拟接口，没有向真实钉钉群发送消息。
+
+v2.2.1 起的简洁消息示例（项目、网址和手机号均为示意）：
+
+```text
+【部署成功】测试环境
+订单服务：成功 #128
+https://jenkins.example.com/job/order-service/128/console
+@13800000000
+```
+
+```text
+【部署失败】测试环境
+订单服务：失败 #129
+https://jenkins.example.com/job/order-service/129/console
+支付服务：未执行
+@13800000000
+```
 
 - 全部成功、执行失败、结果待确认，以及预约执行任务识别到过期或被另一预约阻挡时，发送结果汇总。手动取消不发送；升级前的旧预约不补发。
 - 预约保存创建时的手机号和机器人；修改它们只影响新预约。准备预约后若通知设置发生变化，需要重新检查预约。

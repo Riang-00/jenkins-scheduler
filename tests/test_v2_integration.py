@@ -126,7 +126,7 @@ class V2IntegrationTests(unittest.TestCase):
             for call in sender.call_args_list:
                 self.assertEqual(call.args[0], {'token': token, 'secret': secret})
                 self.assertEqual(call.args[1], phone)
-                self.assertIn('SUCCESS', call.args[2])
+                self.assertIn('：成功 #', call.args[2])
         self.assertEqual((self.suite.a.counts()['build_posts'], self.suite.b.counts()['build_posts']), (1, 1))
         public = json.dumps(self.call('history'))
         stored = ''.join(path.read_text(encoding='utf-8') for path in (self.data / 'reservations').glob('*.json'))

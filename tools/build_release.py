@@ -57,7 +57,7 @@ def main():
         with zipfile.ZipFile(nsiszip) as archive:
             archive.extractall(nsiszip.parent)
     payload = build_candidate(SOURCE_ROOT, args.exe, build / 'payload', revision=args.revision, runtime=runtime)
-    output = SOURCE_ROOT / 'artifacts/JenkinsScheduler-2.2.0-windows-x64-setup.exe'
+    output = SOURCE_ROOT / 'artifacts/JenkinsScheduler-2.2.1-windows-x64-setup.exe'
     output.parent.mkdir(exist_ok=True)
     compiler_temp = build / 'compiler-temp'
     compiler_temp.mkdir()

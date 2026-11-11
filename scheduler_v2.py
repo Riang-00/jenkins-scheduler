@@ -18,7 +18,7 @@ import jenkins as j
 import notifications as n
 
 PROTOCOL = 2
-VERSION = '2.2.0'
+VERSION = '2.2.1'
 ACTIVE = {'pending', 'running'}
 REQUIRED_FILES = {'app.py', 'engine.py', 'bridge.py', 'configuration.py', 'jenkins.py',
                   'scheduler_v2.py', 'management.py', 'notifications.py', 'runtime_layout.py', 'register-elevated.ps1', 'bin/JenkinsScheduler.exe'}

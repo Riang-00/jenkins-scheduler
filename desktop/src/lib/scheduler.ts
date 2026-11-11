@@ -158,7 +158,7 @@ export async function request<T>(
   action: string,
   data: Record<string, unknown> = {},
 ): Promise<T> {
-  const payload = { ...data, action, protocol: 2, version: "2.2.0" }
+  const payload = { ...data, action, protocol: 2, version: "2.2.1" }
   if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > 65536)
     throw new Error("请求内容超过上限，请分批选择项目或减少本次预约的参数。")
   if (preview) {

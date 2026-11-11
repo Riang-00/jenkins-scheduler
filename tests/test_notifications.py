@@ -210,11 +210,14 @@ class SettingsTests(unittest.TestCase):
         record['message'] = 'synthetic-sensitive-value'
         record['results'][item['project_id']] = {'number': 15, 'result': 'FAILURE'}
         body = n.summary(record)
-        self.assertIn('FAILURE', body)
+        self.assertIn('【部署失败】', body)
+        self.assertIn('失败 #15', body)
         self.assertIn('/15/console', body)
         self.assertIn('未执行', body)
         self.assertNotIn('synthetic-sensitive-value', body)
         self.assertNotIn('PASSWORD', body)
+        self.assertNotIn(record['id'], body)
+        self.assertNotIn(record['scheduled_at'], body)
 
 
 class HttpTests(unittest.TestCase):

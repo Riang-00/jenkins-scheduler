@@ -195,31 +195,32 @@ def test(data, request):
 
 def summary(record):
     import jenkins as j
-    labels = {'success': '全部成功', 'failed': '执行失败', 'attention': '结果待确认', 'expired': '已过期，未部署', 'blocked': '未执行：另一预约正在运行'}
-    lines = ['【Jenkins Scheduler 预约部署结果】', '结果：' + labels.get(record['status'], '需核对'),
-             'Jenkins：' + str(record['instance_snapshot'].get('name', ''))[:200],
-             '预约时间：' + record['scheduled_at'], '结束时间：' + record.get('finished_at', now())]
+    labels = {'success': '部署成功', 'failed': '部署失败', 'attention': '结果待确认', 'expired': '预约已过期', 'blocked': '预约未执行：另一预约正在运行'}
+    outcomes = {'SUCCESS': '成功', 'FAILURE': '失败', 'UNSTABLE': '不稳定', 'ABORTED': '已中止', 'NOT_BUILT': '未构建'}
+    sections = ['【' + labels.get(record['status'], '结果待确认') + '】' + str(record['instance_snapshot'].get('name', ''))[:200]]
     results = record.get('results', {})
     items = record.get('items', [])
-    for index, item in enumerate(items[:15], 1):
+    shown = 0
+    for item in items[:15]:
         result = results.get(item['project_id'], {})
-        outcome = result.get('result') or ('结果待确认' if result else '未执行')
-        lines.append(f"{index}. {str(item.get('label') or item.get('full_name', ''))[:100]}：{outcome}")
+        raw = result.get('result')
+        outcome = outcomes.get(raw, raw[:40]) if isinstance(raw, str) and raw else ('结果待确认' if result else '未执行')
+        lines = [f"{str(item.get('label') or item.get('full_name', ''))[:100]}：{outcome}"]
         number = result.get('number')
         if type(number) is int and number > 0:
-            lines.append('构建 #' + str(number))
+            lines[0] += ' #' + str(number)
             link = record['instance_snapshot']['base_url'] + j.job_path(item['path_segments']) + f'/{number}/console'
             if len(link) <= 600:
                 lines.append(link)
-    if len(items) > 15:
-        lines.append(f'其余 {len(items) - 15} 个项目请在部署记录中查看。')
+        section = '\n'.join(lines)
+        if len('\n'.join([*sections, section]).encode('utf-8')) > 17000:
+            break
+        sections.append(section)
+        shown += 1
+    if len(items) > shown:
+        sections.append(f'其余 {len(items) - shown} 个项目请在部署记录中查看。')
     # Deployment messages may contain parameter values or URLs; keep them local.
-    lines.extend(['详细执行说明请查看本机部署记录。', '预约编号：' + record['id']])
-    text = '\n'.join(lines)
-    while len(text.encode('utf-8')) > 18000:
-        lines.pop(-3)
-        text = '\n'.join(lines)
-    return text
+    return '\n'.join(sections)
 
 
 def notify_completion(data, identifier):
